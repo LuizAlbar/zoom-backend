@@ -7,7 +7,7 @@ async function bootstrap() {
   try {
     await app.listen({ port: env.PORT, host: '0.0.0.0' });
     console.log(`🚀 Servidor MCP rodando na porta ${env.PORT}`);
-    console.log(`📡 SSE Endpoint: http://localhost:${env.PORT}/sse`);
+    console.log(`📡 MCP Endpoint: http://localhost:${env.PORT}/mcp`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

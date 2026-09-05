@@ -1,0 +1,35 @@
+services:
+  api-dev:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.dev
+    container_name: ecommerce-mcp-backend-dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../.env
+    environment:
+      - PORT=3000
+    volumes:
+      - ../:/usr/app
+      - /usr/app/node_modules
+    networks:
+      - ecommerce-backend-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok_tunnel
+    restart: unless-stopped
+    ports:
+      - "4040:4040" 
+    env_file:
+      - ../.env
+    command: http api-dev:3000
+    depends_on:
+      - api-dev
+    networks:
+      - ecommerce-backend-network
+
+networks:
+  ecommerce-backend-network:
+    driver: bridge

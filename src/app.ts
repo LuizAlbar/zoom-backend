@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { fastifySwagger } from "@fastify/swagger";
 import { fastifySwaggerUi } from "@fastify/swagger-ui";
 import {
@@ -23,6 +24,12 @@ export async function buildApp() {
     origin: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
     credentials: true,
+  });
+
+  // Rate Limit Config: max 10 requests por segundo por IP
+  await app.register(rateLimit, {
+    max: 10,
+    timeWindow: '1 second',
   });
 
   // Zod Type Provider Config

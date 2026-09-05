@@ -8,7 +8,7 @@
     "start": "node dist/server.js",
     "dev": "tsx --watch src/server.ts",
     "docker:dev": "docker compose -f dev/docker-compose.dev.yaml up --build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=dev SHOPEE_APP_ID=mock_shopee_id SHOPEE_SECRET=mock_shopee_secret MAGALU_ID=mock_magalu_id MAGALU_SECRET=mock_magalu_secret vitest run"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +35,7 @@
   "devDependencies": {
     "@types/node": "^26.4.1",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
   }
 }

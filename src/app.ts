@@ -10,8 +10,10 @@ import {
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createMcpServer } from './shared/mcp/mcp.server.js';
 import { shopeeRoutes } from "./modules/shopee/route.js";
+import { magaluRoutes } from "./modules/magalu/route.js";
 import { FastifyHttpPresenter } from "./shared/http/fastify-http-presenter.js";
 import { env } from "./shared/env/index.js";
+import { logger } from "./shared/log/logger.js";
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -110,8 +112,28 @@ export async function buildApp() {
     await transport.handleRequest(req.raw, reply.raw, req.body);
   });
 
+  // Se for ambiente de desenvolvimento, logar tráfego de dados (inputs e outputs) das requisições
+  if (env.NODE_ENV === 'dev') {
+    app.addHook('preHandler', async (request) => {
+      logger.debug(`📥 Request [${request.method}] ${request.url} - Query:`, request.query, 'Body:', request.body);
+    });
+
+    app.addHook('onSend', async (request, reply, payload) => {
+      try {
+        let parsedPayload = payload;
+        if (typeof payload === 'string') {
+          parsedPayload = JSON.parse(payload);
+        }
+        logger.debug(`📤 Response [${request.method}] ${request.url} [Status: ${reply.statusCode}] - Body:`, parsedPayload);
+      } catch {
+        // Ignora payloads binários, buffers ou não parseáveis
+      }
+    });
+  }
+
   // Register REST API Routes
   await app.register(shopeeRoutes, { prefix: "/shopee" });
+  await app.register(magaluRoutes, { prefix: "/magalu" });
 
   // Health check endpoint
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));

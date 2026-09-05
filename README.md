@@ -107,6 +107,7 @@ http://localhost:8080/docs
 ```
 Aqui você poderá testar as chamadas diretamente da interface do Swagger.
 - **Busca Shopee (REST)**: `GET /shopee/search?keyword=mouse&limit=5`
+- **Busca Magalu (REST)**: `GET /magalu/search?keyword=notebook&limit=5`
 
 ### 2. Endpoint do Model Context Protocol (MCP)
 Agentes de IA compatíveis com o protocolo MCP se conectam usando o moderno endpoint unificado de transporte HTTP:

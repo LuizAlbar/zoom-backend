@@ -17,7 +17,7 @@ import { env } from "./shared/env/index.js";
 import { logger } from "./shared/log/logger.js";
 
 export async function buildApp() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: true, forceCloseConnections: true });
 
   // CORS Config
   await app.register(cors, {

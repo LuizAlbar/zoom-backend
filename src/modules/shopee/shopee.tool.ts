@@ -47,4 +47,29 @@ export function registerShopeeTools(mcpServer: McpServer) {
       }
     }
   );
+
+  mcpServer.registerTool(
+    'generate_affiliate_link',
+    {
+      description: 'Transforma um link normal de produto ou página da Shopee (copiado da web pelo usuário) em um link de afiliado curto e comissionado com sub_id para rastreamento de vendas.',
+      inputSchema: {
+        original_url: z.string().url().describe('A URL original completa do produto ou página da Shopee a ser convertida.'),
+        sub_id: z.string().max(50).optional().describe('Identificador opcional de rastreamento de campanha (max 50 caracteres).'),
+      }
+    },
+    async ({ original_url, sub_id }) => {
+      try {
+        const result = await service.generateAffiliateLink({ original_url, sub_id });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{ type: 'text', text: `Erro na geração de link afiliado Shopee: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
 }

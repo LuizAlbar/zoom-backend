@@ -1,5 +1,6 @@
 import { ShopeeAffiliateClient } from './shopee.client.js';
 import { ISearchShopeeQuerySchema } from './validators/shopee-validator.js';
+import { IGenerateLinkInputSchema } from './validators/link-generator-validator.js';
 
 export class ShopeeService {
   constructor(private client = new ShopeeAffiliateClient()) {}
@@ -54,5 +55,17 @@ export class ShopeeService {
 
     // Retorna cortado no limite solicitado
     return mappedItems.slice(0, limit);
+  }
+
+  async generateAffiliateLink(params: IGenerateLinkInputSchema) {
+    const { original_url, sub_id } = params;
+
+    const shortLink = await this.client.generateShortLink(original_url, sub_id);
+
+    return {
+      original_url,
+      short_link: shortLink,
+      sub_id: sub_id || null,
+    };
   }
 }

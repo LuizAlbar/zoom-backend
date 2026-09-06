@@ -125,4 +125,27 @@ describe('ShopeeService', () => {
     expect(result[0].id).toBe('3');
     expect(result[1].id).toBe('2');
   });
+
+  it('should generate affiliate link correctly', async () => {
+    // Arrange
+    const mockClient = {
+      generateShortLink: vi.fn().mockResolvedValue('https://shope.ee/mGL123'),
+    } as unknown as ShopeeAffiliateClient;
+
+    const service = new ShopeeService(mockClient);
+
+    // Act
+    const result = await service.generateAffiliateLink({
+      original_url: 'https://shopee.com.br/product-i.123',
+      sub_id: 'campanha01',
+    });
+
+    // Assert
+    expect(mockClient.generateShortLink).toHaveBeenCalledWith('https://shopee.com.br/product-i.123', 'campanha01');
+    expect(result).toEqual({
+      original_url: 'https://shopee.com.br/product-i.123',
+      short_link: 'https://shope.ee/mGL123',
+      sub_id: 'campanha01',
+    });
+  });
 });

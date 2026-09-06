@@ -8,7 +8,10 @@ export const errorResponse = z.object({
 export const shopeeProductSchema = z.object({
   id: z.string(),
   titulo: z.string(),
+  preco_num: z.number(),
   preco: z.string(),
+  vendas: z.number(),
+  taxa_comissao: z.string(),
   link_compra: z.string(),
   imagem: z.string().nullable().optional(),
 });

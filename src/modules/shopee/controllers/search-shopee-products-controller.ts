@@ -7,11 +7,11 @@ export async function searchShopeeProductsController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const { keyword, limit } = searchShopeeQuerySchema.parse(request.query);
+  const queryParams = searchShopeeQuerySchema.parse(request.query);
 
   const shopeeService = new ShopeeService();
 
-  const products = await shopeeService.searchAndFormat(keyword, limit);
+  const products = await shopeeService.searchAndFormat(queryParams);
 
   return FastifyHttpPresenter.success(reply, 200, {
     products,

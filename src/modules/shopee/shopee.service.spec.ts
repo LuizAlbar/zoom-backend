@@ -148,4 +148,50 @@ describe('ShopeeService', () => {
       sub_id: 'campanha01',
     });
   });
+
+  it('should analyze affiliate product link correctly', async () => {
+    // Arrange
+    const mockProducts = [
+      {
+        itemId: '987654321',
+        productName: 'Fone de Ouvido Bluetooth',
+        price: '120.00',
+        sales: 3420,
+        imageUrl: 'https://shopee.com/image.png',
+        productLink: 'https://shopee.com/product',
+        offerLink: 'https://shopee.com/offer',
+        commissionRate: '12%',
+      }
+    ];
+
+    const mockClient = {
+      getProductById: vi.fn().mockResolvedValue(mockProducts[0]),
+      generateShortLink: vi.fn().mockResolvedValue('https://s.shopee.com.br/xyz123'),
+    } as unknown as ShopeeAffiliateClient;
+
+    const service = new ShopeeService(mockClient);
+
+    // Act
+    const result = await service.analyzeProductLink({
+      url: 'https://shopee.com.br/Produto-Exemplo-i.12345678.987654321',
+      sub_id: 'campanha_promocional',
+    });
+
+    // Assert
+    expect(mockClient.getProductById).toHaveBeenCalledWith('987654321');
+    expect(mockClient.generateShortLink).toHaveBeenCalledWith('https://shopee.com/product', 'campanha_promocional');
+    expect(result).toEqual({
+      item_id: '987654321',
+      titulo: 'Fone de Ouvido Bluetooth',
+      imagem: 'https://shopee.com/image.png',
+      preco_num: 120.00,
+      preco: 'R$ 120,00',
+      taxa_comissao: '12%',
+      estimativa_comissao_num: 14.40,
+      estimativa_comissao: 'R$ 14,40',
+      vendas: 3420,
+      short_link: 'https://s.shopee.com.br/xyz123',
+      sub_id: 'campanha_promocional',
+    });
+  });
 });

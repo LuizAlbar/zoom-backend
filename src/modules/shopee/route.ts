@@ -4,6 +4,8 @@ import { searchShopeeQuerySchema } from "./validators/shopee-validator.js";
 import { errorResponse, successShopeeListResponse } from "./validators/swagger-responses.js";
 import { generateAffiliateLinkController } from "./controllers/generate-affiliate-link-controller.js";
 import { generateLinkInputSchema, successGenerateLinkResponse } from "./validators/link-generator-validator.js";
+import { analyzeAffiliateProductLinkController } from "./controllers/analyze-affiliate-product-link-controller.js";
+import { analyzeLinkInputSchema, successAnalyzeLinkResponse } from "./validators/link-analyzer-validator.js";
 
 export async function shopeeRoutes(app: FastifyZodTypedInstance) {
   app.get(
@@ -38,5 +40,22 @@ export async function shopeeRoutes(app: FastifyZodTypedInstance) {
       },
     },
     generateAffiliateLinkController
+  );
+
+  app.post(
+    "/links/analyze",
+    {
+      schema: {
+        tags: ["shopee"],
+        description: "Analisa um link de produto da Shopee, extrai detalhes, calcula a estimativa de comissão e gera o link encurtado comissionado",
+        body: analyzeLinkInputSchema,
+        response: {
+          200: successAnalyzeLinkResponse,
+          400: errorResponse,
+          500: errorResponse,
+        },
+      },
+    },
+    analyzeAffiliateProductLinkController
   );
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "tsx --watch src/server.ts",
+    "dev": "node --import tsx --watch src/server.ts",
     "docker:dev": "docker compose -f dev/docker-compose.dev.yaml up --build",
     "test": "NODE_ENV=dev SHOPEE_APP_ID=mock_shopee_id SHOPEE_SECRET=mock_shopee_secret MAGALU_ID=mock_magalu_id MAGALU_SECRET=mock_magalu_secret vitest run"
   },

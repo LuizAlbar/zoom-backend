@@ -72,4 +72,29 @@ export function registerShopeeTools(mcpServer: McpServer) {
       }
     }
   );
+
+  mcpServer.registerTool(
+    'analyze_affiliate_product_link',
+    {
+      description: 'Analisa e inspeciona um link de produto da Shopee (comum ou encurtado) para verificar viabilidade financeira, calcular estimativa de comissão em Reais, obter fotos, estatísticas e gerar o link encurtado de afiliado comissionado.',
+      inputSchema: {
+        url: z.string().url().describe('A URL completa do produto (ou link curto s.shopee.com.br / shope.ee) a ser analisado.'),
+        sub_id: z.string().max(50).optional().describe('Identificador opcional de rastreamento de campanha (max 50 caracteres).'),
+      }
+    },
+    async ({ url, sub_id }) => {
+      try {
+        const result = await service.analyzeProductLink({ url, sub_id });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{ type: 'text', text: `Erro na análise do link do produto Shopee: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
 }

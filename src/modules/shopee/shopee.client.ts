@@ -60,6 +60,49 @@ export class ShopeeAffiliateClient {
     return response.data?.data?.productOfferV2?.nodes || [];
   }
 
+  async getProductById(itemId: string | number): Promise<ShopeeProductNode | null> {
+    const query = `
+      query getProductById($itemId: Int64) {
+        productOfferV2(itemId: $itemId, page: 1, limit: 1) {
+          nodes {
+            itemId
+            productName
+            price
+            sales
+            imageUrl
+            productLink
+            offerLink
+            commissionRate
+          }
+        }
+      }
+    `;
+
+    const payload = JSON.stringify({
+      query,
+      variables: {
+        itemId: String(itemId),
+      },
+    });
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const authHeader = this.generateAuthHeader(payload, timestamp);
+
+    const response = await axios.post(env.SHOPEE_GRAPHQL_ENDPOINT, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+      },
+    });
+
+    if (response.data.errors) {
+      throw new Error(`Shopee GraphQL Error: ${JSON.stringify(response.data.errors)}`);
+    }
+
+    const nodes = response.data?.data?.productOfferV2?.nodes || [];
+    return nodes[0] || null;
+  }
+
   async generateShortLink(originalUrl: string, subId?: string): Promise<string> {
     const query = `
       mutation generateShortLink($input: ShortLinkInput!) {

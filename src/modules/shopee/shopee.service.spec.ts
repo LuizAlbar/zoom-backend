@@ -194,4 +194,96 @@ describe('ShopeeService', () => {
       sub_id: 'campanha_promocional',
     });
   });
+
+  it('should build bundle by budget correctly', async () => {
+    // Arrange
+    const mockMousepads = [
+      {
+        itemId: '101',
+        productName: 'Mousepad Gamer Speed',
+        price: '40.00',
+        sales: 500,
+        imageUrl: 'img101',
+        productLink: 'lnk101',
+        offerLink: 'off101',
+        commissionRate: '10%',
+      },
+      {
+        itemId: '102',
+        productName: 'Mousepad Gamer Control',
+        price: '60.00',
+        sales: 100,
+        imageUrl: 'img102',
+        productLink: 'lnk102',
+        offerLink: 'off102',
+        commissionRate: '10%',
+      }
+    ];
+
+    const mockSupports = [
+      {
+        itemId: '201',
+        productName: 'Suporte Headset Premium',
+        price: '120.00',
+        sales: 200,
+        imageUrl: 'img201',
+        productLink: 'lnk201',
+        offerLink: 'off201',
+        commissionRate: '10%',
+      },
+      {
+        itemId: '202',
+        productName: 'Suporte Headset Eco',
+        price: '80.00',
+        sales: 10,
+        imageUrl: 'img202',
+        productLink: 'lnk202',
+        offerLink: 'off202',
+        commissionRate: '10%',
+      }
+    ];
+
+    const mockClient = {
+      searchProducts: vi.fn().mockImplementation((term: string) => {
+        if (term === 'mousepad') return Promise.resolve(mockMousepads);
+        if (term === 'suporte') return Promise.resolve(mockSupports);
+        return Promise.resolve([]);
+      }),
+    } as unknown as ShopeeAffiliateClient;
+
+    const service = new ShopeeService(mockClient);
+
+    // Act
+    const result = await service.buildBundleByBudget({
+      items: ['mousepad', 'suporte'],
+      max_total_budget: 150.00,
+    });
+
+    // Assert
+    expect(result.total_itens).toBe(2);
+    expect(result.valor_total_kit_num).toBeLessThanOrEqual(150.00);
+    expect(result.itens).toHaveLength(2);
+  });
+
+  it('should throw error if budget is insufficient', async () => {
+    // Arrange
+    const mockMousepads = [{ itemId: '101', productName: 'Mousepad', price: '40.00', sales: 1, imageUrl: 'img', productLink: 'lnk', offerLink: 'off', commissionRate: '10%' }];
+    const mockSupports = [{ itemId: '201', productName: 'Suporte', price: '80.00', sales: 1, imageUrl: 'img', productLink: 'lnk', offerLink: 'off', commissionRate: '10%' }];
+
+    const mockClient = {
+      searchProducts: vi.fn().mockImplementation((term: string) => {
+        if (term === 'mousepad') return Promise.resolve(mockMousepads);
+        if (term === 'suporte') return Promise.resolve(mockSupports);
+        return Promise.resolve([]);
+      }),
+    } as unknown as ShopeeAffiliateClient;
+
+    const service = new ShopeeService(mockClient);
+
+    // Act & Assert
+    await expect(service.buildBundleByBudget({
+      items: ['mousepad', 'suporte'],
+      max_total_budget: 100.00,
+    })).rejects.toThrow('Orçamento insuficiente para montar este kit. O valor mínimo necessário é R$ 120,00.');
+  });
 });

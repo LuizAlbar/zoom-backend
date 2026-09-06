@@ -78,7 +78,7 @@ export function registerShopeeTools(mcpServer: McpServer) {
     {
       description: 'Analisa e inspeciona um link de produto da Shopee (comum ou encurtado) para verificar viabilidade financeira, calcular estimativa de comissão em Reais, obter fotos, estatísticas e gerar o link encurtado de afiliado comissionado.',
       inputSchema: {
-        url: z.string().url().describe('A URL completa do produto (ou link curto s.shopee.com.br / shope.ee) a ser analisado.'),
+        url: z.string().url().describe('A URL completa do produto (or link curto s.shopee.com.br / shope.ee) a ser analisado.'),
         sub_id: z.string().max(50).optional().describe('Identificador opcional de rastreamento de campanha (max 50 caracteres).'),
       }
     },
@@ -92,6 +92,31 @@ export function registerShopeeTools(mcpServer: McpServer) {
       } catch (error: any) {
         return {
           content: [{ type: 'text', text: `Erro na análise do link do produto Shopee: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  mcpServer.registerTool(
+    'build_bundle_by_budget',
+    {
+      description: 'Monta um kit otimizado de produtos selecionando exatamente um item para cada termo/categoria solicitado (ex: ["mousepad grande", "suporte headset"]) de modo que a soma total respeite o orçamento máximo estipulado.',
+      inputSchema: {
+        items: z.array(z.string().min(2)).min(2).max(6).describe('Lista de categorias ou nomes dos produtos que devem compor o kit (mínimo 2, máximo 6).'),
+        max_total_budget: z.number().positive().describe('O limite máximo de orçamento em Reais (BRL) para o valor somado de todos os itens do kit.'),
+      }
+    },
+    async ({ items, max_total_budget }) => {
+      try {
+        const result = await service.buildBundleByBudget({ items, max_total_budget });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{ type: 'text', text: `Erro na montagem do kit por orçamento: ${error.message}` }],
           isError: true,
         };
       }

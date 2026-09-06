@@ -2,6 +2,7 @@ import { ShopeeAffiliateClient } from './shopee.client.js';
 import { ISearchShopeeQuerySchema } from './validators/shopee-validator.js';
 import { IGenerateLinkInputSchema } from './validators/link-generator-validator.js';
 import { IAnalyzeLinkInputSchema } from './validators/link-analyzer-validator.js';
+import { IBuildBundleInputSchema } from './validators/bundle-validator.js';
 import { resolveShopeeUrlAndExtractItemId } from './helpers/shopee-url.helper.js';
 
 /**
@@ -137,6 +138,114 @@ export class ShopeeService {
       vendas: item.sales || 0,
       short_link: shortLink,
       sub_id: sub_id || null,
+    };
+  }
+
+  async buildBundleByBudget(params: IBuildBundleInputSchema) {
+    const { items, max_total_budget } = params;
+
+    // 1. Busca produtos de forma concorrente para cada categoria desejada (limite de 8 candidatos por categoria)
+    const searchPromises = items.map(async (term) => {
+      const candidates = await this.client.searchProducts(term, 8);
+      
+      // Filtra candidatos válidos com preço > 0
+      const validCandidates = candidates
+        .map((item) => {
+          const priceNum = parseFloat(item.price.replace(',', '.')) || 0;
+          return {
+            id: String(item.itemId),
+            titulo: item.productName,
+            preco_num: priceNum,
+            preco: `R$ ${priceNum.toFixed(2).replace('.', ',')}`,
+            vendas: item.sales || 0,
+            imagem: item.imageUrl,
+            link_compra: item.offerLink || item.productLink,
+          };
+        })
+        .filter((c) => c.preco_num > 0);
+
+      if (validCandidates.length === 0) {
+        throw new Error(`Nenhum produto válido encontrado para a categoria "${term}" na Shopee.`);
+      }
+
+      return validCandidates;
+    });
+
+    const categoriesCandidates = await Promise.all(searchPromises);
+
+    // 2. Calcula o orçamento mínimo necessário (soma dos produtos mais baratos de cada categoria)
+    let minRequiredBudget = 0;
+    for (const candidates of categoriesCandidates) {
+      const cheapestPrice = Math.min(...candidates.map((c) => c.preco_num));
+      minRequiredBudget += cheapestPrice;
+    }
+
+    if (minRequiredBudget > max_total_budget) {
+      const formattedMin = `R$ ${minRequiredBudget.toFixed(2).replace('.', ',')}`;
+      throw new Error(`Orçamento insuficiente para montar este kit. O valor mínimo necessário é ${formattedMin}.`);
+    }
+
+    // 3. Algoritmo de backtracking para achar a melhor combinação
+    // Pontuação maximiza aproveitamento do orçamento (80% peso) e prioriza itens mais populares (20% peso)
+    let bestCombination: any[] | null = null;
+    let bestScore = -1;
+
+    const N = categoriesCandidates.length;
+
+    function solve(catIndex: number, selection: any[], currentPrice: number, currentSales: number) {
+      if (currentPrice > max_total_budget) return; // Podagem (pruning)
+
+      if (catIndex === N) {
+        const budgetUtilization = currentPrice / max_total_budget;
+        const avgSales = currentSales / N;
+        const score = budgetUtilization * 1000 + avgSales * 0.05;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCombination = [...selection];
+        }
+        return;
+      }
+
+      for (const candidate of categoriesCandidates[catIndex]) {
+        solve(
+          catIndex + 1,
+          [...selection, candidate],
+          currentPrice + candidate.preco_num,
+          currentSales + candidate.vendas
+        );
+      }
+    }
+
+    solve(0, [], 0, 0);
+
+    if (!bestCombination) {
+      throw new Error('Não foi possível encontrar uma combinação viável dentro do orçamento estipulado.');
+    }
+
+    const selectedItems = bestCombination as any[];
+
+    const valor_total_kit_num = selectedItems.reduce((sum: number, item: any) => sum + item.preco_num, 0);
+    const saldo_restante_num = Number((max_total_budget - valor_total_kit_num).toFixed(2));
+
+    return {
+      orcamento_maximo_num: max_total_budget,
+      orcamento_maximo: `R$ ${max_total_budget.toFixed(2).replace('.', ',')}`,
+      valor_total_kit_num: Number(valor_total_kit_num.toFixed(2)),
+      valor_total_kit: `R$ ${valor_total_kit_num.toFixed(2).replace('.', ',')}`,
+      saldo_restante_num,
+      saldo_restante: `R$ ${saldo_restante_num.toFixed(2).replace('.', ',')}`,
+      total_itens: N,
+      itens: selectedItems.map((item: any, idx: number) => ({
+        categoria: items[idx],
+        id: item.id,
+        titulo: item.titulo,
+        preco_num: item.preco_num,
+        preco: item.preco,
+        vendas: item.vendas,
+        imagem: item.imagem,
+        link_compra: item.link_compra,
+      })),
     };
   }
 }

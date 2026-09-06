@@ -6,6 +6,8 @@ import { generateAffiliateLinkController } from "./controllers/generate-affiliat
 import { generateLinkInputSchema, successGenerateLinkResponse } from "./validators/link-generator-validator.js";
 import { analyzeAffiliateProductLinkController } from "./controllers/analyze-affiliate-product-link-controller.js";
 import { analyzeLinkInputSchema, successAnalyzeLinkResponse } from "./validators/link-analyzer-validator.js";
+import { buildBundleByBudgetController } from "./controllers/build-bundle-by-budget-controller.js";
+import { buildBundleInputSchema, successBuildBundleResponse } from "./validators/bundle-validator.js";
 
 export async function shopeeRoutes(app: FastifyZodTypedInstance) {
   app.get(
@@ -57,5 +59,23 @@ export async function shopeeRoutes(app: FastifyZodTypedInstance) {
       },
     },
     analyzeAffiliateProductLinkController
+  );
+
+  app.post(
+    "/products/bundle",
+    {
+      schema: {
+        tags: ["shopee"],
+        description: "Monta um kit otimizado de produtos selecionando exatamente um item para cada termo solicitado dentro do orçamento máximo",
+        body: buildBundleInputSchema,
+        response: {
+          200: successBuildBundleResponse,
+          400: errorResponse,
+          422: errorResponse,
+          500: errorResponse,
+        },
+      },
+    },
+    buildBundleByBudgetController
   );
 }

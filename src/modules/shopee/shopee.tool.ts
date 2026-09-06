@@ -5,12 +5,14 @@ import { ShopeeService } from './shopee.service.js';
 export function registerShopeeTools(mcpServer: McpServer) {
   const service = new ShopeeService();
 
-  mcpServer.tool(
+  mcpServer.registerTool(
     'search_shopee_products',
-    'Busca produtos no marketplace da Shopee retornando título, preço e link de compra.',
     {
-      keyword: z.string().describe('Nome ou termo de busca do produto (ex: mouse sem fio, camiseta)'),
-      limit: z.number().optional().default(5).describe('Quantidade de itens a retornar (máximo 20)'),
+      description: 'Busca produtos no marketplace da Shopee retornando título, preço e link de compra.',
+      inputSchema: {
+        keyword: z.string().describe('Nome ou termo de busca do produto (ex: mouse sem fio, camiseta)'),
+        limit: z.number().optional().default(5).describe('Quantidade de itens a retornar (máximo 20)'),
+      }
     },
     async ({ keyword, limit }) => {
       try {

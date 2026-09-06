@@ -12,5 +12,5 @@ export function createMcpServer() {
   registerShopeeTools(mcpServer);
   registerMagaluTools(mcpServer);
 
-  return mcpServer;
+  return mcpServer;   
 }

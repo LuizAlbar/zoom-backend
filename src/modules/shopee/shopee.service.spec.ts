@@ -351,4 +351,40 @@ describe('ShopeeService', () => {
       comissao_gerada: 'R$ 45,00',
     });
   });
+
+  it('should inspect seller reputation correctly', async () => {
+    // Arrange
+    const mockProduct = {
+      itemId: '777888',
+      productName: 'Teclado Gamer Mecânico Bluetooth RGB',
+      price: '250.00',
+      sales: 1200,
+      imageUrl: 'https://shopee.com/teclado.png',
+      productLink: 'https://shopee.com/teclado',
+      offerLink: 'https://shopee.com/offer-teclado',
+      commissionRate: '10%',
+      ratingStar: 4.8,
+    };
+
+    const mockClient = {
+      getProductById: vi.fn().mockResolvedValue(mockProduct),
+    } as unknown as ShopeeAffiliateClient;
+
+    const service = new ShopeeService(mockClient);
+
+    // Act
+    const result = await service.inspectSellerReputation({
+      item_id: '777888',
+    });
+
+    // Assert
+    expect(mockClient.getProductById).toHaveBeenCalledWith('777888');
+    expect(result.item_id).toBe('777888');
+    expect(result.score_confianca).toBe(100); // 40 (sales) + 40 (rating) + 20 (price) = 100
+    expect(result.nivel).toBe('Excelente');
+    expect(result.vendas_totais).toBe(1200);
+    expect(result.avaliacao_media).toBe(4.8);
+    expect(result.alertas).toContain('Histórico consistente: anúncio com altíssimo volume de vendas.');
+    expect(result.alertas).toContain('Satisfação excelente: avaliação média dos compradores extremamente alta.');
+  });
 });

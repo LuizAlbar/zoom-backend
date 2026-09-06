@@ -10,6 +10,8 @@ import { buildBundleByBudgetController } from "./controllers/build-bundle-by-bud
 import { buildBundleInputSchema, successBuildBundleResponse } from "./validators/bundle-validator.js";
 import { getConversionReportController } from "./controllers/get-conversion-report-controller.js";
 import { conversionReportQuerySchema, successConversionReportResponse } from "./validators/report-validator.js";
+import { inspectSellerReputationController } from "./controllers/inspect-seller-reputation-controller.js";
+import { inspectSellerInputSchema, successInspectSellerResponse } from "./validators/inspect-validator.js";
 
 export async function shopeeRoutes(app: FastifyZodTypedInstance) {
   app.get(
@@ -96,5 +98,22 @@ export async function shopeeRoutes(app: FastifyZodTypedInstance) {
       },
     },
     getConversionReportController
+  );
+
+  app.post(
+    "/sellers/inspect",
+    {
+      schema: {
+        tags: ["shopee"],
+        description: "Audita e inspeciona a reputação e segurança de um anúncio ou loja da Shopee a partir de seu ID ou URL",
+        body: inspectSellerInputSchema,
+        response: {
+          200: successInspectSellerResponse,
+          400: errorResponse,
+          500: errorResponse,
+        },
+      },
+    },
+    inspectSellerReputationController
   );
 }

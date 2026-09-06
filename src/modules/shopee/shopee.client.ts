@@ -11,6 +11,7 @@ export interface ShopeeProductNode {
   productLink: string;
   offerLink: string;
   commissionRate: string;
+  ratingStar?: number;
 }
 
 export class ShopeeAffiliateClient {
@@ -33,6 +34,7 @@ export class ShopeeAffiliateClient {
             productLink
             offerLink
             commissionRate
+            ratingStar
           }
         }
       }
@@ -73,6 +75,7 @@ export class ShopeeAffiliateClient {
             productLink
             offerLink
             commissionRate
+            ratingStar
           }
         }
       }

@@ -4,6 +4,7 @@ import { IGenerateLinkInputSchema } from './validators/link-generator-validator.
 import { IAnalyzeLinkInputSchema } from './validators/link-analyzer-validator.js';
 import { IBuildBundleInputSchema } from './validators/bundle-validator.js';
 import { IConversionReportInputSchema } from './validators/report-validator.js';
+import { IInspectSellerInputSchema } from './validators/inspect-validator.js';
 import { resolveShopeeUrlAndExtractItemId } from './helpers/shopee-url.helper.js';
 
 /**
@@ -325,6 +326,112 @@ export class ShopeeService {
         cliques_totais,
       },
       principais_itens_vendidos: formattedItens,
+    };
+  }
+
+  async inspectSellerReputation(params: IInspectSellerInputSchema) {
+    const { item_id, url } = params;
+
+    let itemId = item_id;
+
+    if (!itemId && url) {
+      itemId = await resolveShopeeUrlAndExtractItemId(url);
+    }
+
+    if (!itemId) {
+      throw new Error('É obrigatório informar pelo menos o item_id ou a url do produto.');
+    }
+
+    // Busca o anúncio no catálogo para analisar reputação e métricas
+    const item = await this.client.getProductById(itemId);
+
+    if (!item) {
+      throw new Error(`Anúncio de produto com ID ${itemId} não foi encontrado na Shopee para auditoria.`);
+    }
+
+    // 1. Volume de Vendas (Peso 40%)
+    const vendas = item.sales || 0;
+    let salesPoints = 0;
+    const alertas: string[] = [];
+
+    if (vendas > 500) {
+      salesPoints = 40;
+      alertas.push('Histórico consistente: anúncio com altíssimo volume de vendas.');
+    } else if (vendas >= 100) {
+      salesPoints = 30;
+      alertas.push('Volume saudável de vendas registrado.');
+    } else if (vendas >= 20) {
+      salesPoints = 15;
+      alertas.push('Volume de vendas moderado.');
+    } else if (vendas > 0) {
+      salesPoints = 5;
+      alertas.push('Atenção: volume baixo de vendas registradas.');
+    } else {
+      salesPoints = 0;
+      alertas.push('Alerta de Alto Risco: Nenhuma venda registrada neste anúncio.');
+    }
+
+    // 2. Avaliação em Estrelas (Peso 40%)
+    const rating = typeof item.ratingStar === 'number'
+      ? item.ratingStar
+      : (typeof item.ratingStar === 'string' ? parseFloat(item.ratingStar) : 0) || 0;
+    let ratingPoints = 0;
+
+    if (rating >= 4.7) {
+      ratingPoints = 40;
+      alertas.push('Satisfação excelente: avaliação média dos compradores extremamente alta.');
+    } else if (rating >= 4.4) {
+      ratingPoints = 30;
+      alertas.push('Avaliação média dos compradores boa.');
+    } else if (rating >= 4.0) {
+      ratingPoints = 15;
+      alertas.push('Avaliação média moderada.');
+    } else {
+      ratingPoints = 0;
+      alertas.push('Alerta: Média de avaliações do produto abaixo do recomendado.');
+    }
+
+    // 3. Consistência de Preço e Oferta (Peso 20%)
+    const priceNum = parseFloat(item.price.replace(',', '.')) || 0;
+    let pricePoints = 20;
+
+    if (priceNum < 10.0) {
+      pricePoints = 5; // penaliza em 15 pontos
+      alertas.push('Alerta de Preço: Valor significativamente abaixo da média de mercado (potencial réplica ou frete abusivo).');
+    } else {
+      alertas.push('Preço consistente com os padrões de mercado.');
+    }
+
+    // 4. Score Final e Recomendação
+    const score_confianca = salesPoints + ratingPoints + pricePoints;
+
+    let nivel = 'Risco Alto';
+    let recomendacao = '';
+
+    if (score_confianca >= 80) {
+      nivel = 'Excelente';
+      recomendacao = 'Compra altamente recomendada. O produto possui excelente volume de vendas e histórico consistente de avaliações altamente positivas.';
+    } else if (score_confianca >= 65) {
+      nivel = 'Bom';
+      recomendacao = 'Compra segura recomendada. Bom histórico de avaliações e vendas verificado.';
+    } else if (score_confianca >= 45) {
+      nivel = 'Moderado';
+      recomendacao = 'Proceda com atenção. Anúncio com reputação moderada, histórico recente de vendas ou avaliações intermediárias.';
+    } else {
+      nivel = 'Risco Alto';
+      recomendacao = 'Alerta de risco. Recomendamos forte cautela devido ao baixo volume de vendas registradas ou avaliações de compradores insuficientes.';
+    }
+
+    return {
+      item_id: String(item.itemId),
+      titulo: item.productName,
+      score_confianca,
+      nivel,
+      vendas_totais: vendas,
+      avaliacao_media: Number(rating.toFixed(1)),
+      alertas,
+      recomendacao,
+      link_seguro: item.offerLink || item.productLink,
     };
   }
 }

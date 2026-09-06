@@ -148,4 +148,29 @@ export function registerShopeeTools(mcpServer: McpServer) {
       }
     }
   );
+
+  mcpServer.registerTool(
+    'inspect_seller_reputation',
+    {
+      description: 'Audita e analisa a confiabilidade de um anúncio ou vendedor da Shopee com base em seu ID de produto ou URL. Retorna um score de confiança de 0 a 100, classificação de risco, alertas de segurança e recomendações proativas de compra.',
+      inputSchema: {
+        item_id: z.string().optional().describe('O identificador numérico único (itemId) do anúncio do produto.'),
+        url: z.string().url().optional().describe('A URL original completa (ou link encurtado s.shopee.com.br / shope.ee) do produto a ser analisado.'),
+      }
+    },
+    async ({ item_id, url }) => {
+      try {
+        const result = await service.inspectSellerReputation({ item_id, url });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{ type: 'text', text: `Erro na inspeção de reputação Shopee: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
 }

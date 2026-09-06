@@ -1,6 +1,24 @@
 import { buildApp } from './app.js';
 import { env } from './shared/env/index.js';
 
+async function startServerWithRetry(app: any, port: number, retries = 5, delay = 200) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await app.listen({ port, host: '0.0.0.0' });
+      console.log(`🚀 Servidor MCP rodando na porta ${port}`);
+      console.log(`📡 MCP Endpoint: http://localhost:${port}/mcp`);
+      return;
+    } catch (err: any) {
+      if (err.code === 'EADDRINUSE' && i < retries - 1) {
+        app.log.warn(`[PORTA PRESA] Porta ${port} em uso. Tentando novamente em ${delay}ms... (Tentativa ${i + 1}/${retries})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 async function bootstrap() {
   const app = await buildApp();
 
@@ -21,9 +39,7 @@ async function bootstrap() {
   }
 
   try {
-    await app.listen({ port: env.PORT, host: '0.0.0.0' });
-    console.log(`🚀 Servidor MCP rodando na porta ${env.PORT}`);
-    console.log(`📡 MCP Endpoint: http://localhost:${env.PORT}/mcp`);
+    await startServerWithRetry(app, env.PORT);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

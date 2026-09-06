@@ -286,4 +286,69 @@ describe('ShopeeService', () => {
       max_total_budget: 100.00,
     })).rejects.toThrow('Orçamento insuficiente para montar este kit. O valor mínimo necessário é R$ 120,00.');
   });
+
+  it('should get conversion report correctly', async () => {
+    // Arrange
+    const mockNodes = [
+      {
+        conversionId: 'CONV-123',
+        purchaseTime: 1788660000,
+        totalCommission: '45.00',
+        orderStatus: 'COMPLETED',
+        orders: [
+          {
+            items: [
+              {
+                itemId: 'item-abc',
+                itemName: 'Cabo USB-C Trançado',
+                itemPrice: '15.00',
+                itemCommission: '15.00',
+                actualAmount: '15.00',
+              },
+              {
+                itemId: 'item-abc',
+                itemName: 'Cabo USB-C Trançado',
+                itemPrice: '15.00',
+                itemCommission: '15.00',
+                actualAmount: '15.00',
+              },
+              {
+                itemId: 'item-abc',
+                itemName: 'Cabo USB-C Trançado',
+                itemPrice: '15.00',
+                itemCommission: '15.00',
+                actualAmount: '15.00',
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    const mockClient = {
+      getConversionReport: vi.fn().mockResolvedValue(mockNodes),
+    } as unknown as ShopeeAffiliateClient;
+
+    const service = new ShopeeService(mockClient);
+
+    // Act
+    const result = await service.getConversionReport({
+      start_date: '2026-08-01',
+      end_date: '2026-08-07',
+      limit: 20,
+    });
+
+    // Assert
+    expect(mockClient.getConversionReport).toHaveBeenCalled();
+    expect(result.resumo.total_pedidos).toBe(1);
+    expect(result.resumo.comissao_estimada_num).toBe(45.00);
+    expect(result.principais_itens_vendidos).toHaveLength(1);
+    expect(result.principais_itens_vendidos[0]).toEqual({
+      itemId: 'item-abc',
+      nome: 'Cabo USB-C Trançado',
+      quantidade: 3,
+      comissao_gerada_num: 45.00,
+      comissao_gerada: 'R$ 45,00',
+    });
+  });
 });

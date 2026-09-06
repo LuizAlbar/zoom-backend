@@ -8,6 +8,8 @@ import { analyzeAffiliateProductLinkController } from "./controllers/analyze-aff
 import { analyzeLinkInputSchema, successAnalyzeLinkResponse } from "./validators/link-analyzer-validator.js";
 import { buildBundleByBudgetController } from "./controllers/build-bundle-by-budget-controller.js";
 import { buildBundleInputSchema, successBuildBundleResponse } from "./validators/bundle-validator.js";
+import { getConversionReportController } from "./controllers/get-conversion-report-controller.js";
+import { conversionReportQuerySchema, successConversionReportResponse } from "./validators/report-validator.js";
 
 export async function shopeeRoutes(app: FastifyZodTypedInstance) {
   app.get(
@@ -77,5 +79,22 @@ export async function shopeeRoutes(app: FastifyZodTypedInstance) {
       },
     },
     buildBundleByBudgetController
+  );
+
+  app.get(
+    "/reports/conversions",
+    {
+      schema: {
+        tags: ["shopee"],
+        description: "Obtém o relatório consolidado de conversões e comissões ganhas de afiliado no período especificado",
+        querystring: conversionReportQuerySchema,
+        response: {
+          200: successConversionReportResponse,
+          400: errorResponse,
+          500: errorResponse,
+        },
+      },
+    },
+    getConversionReportController
   );
 }

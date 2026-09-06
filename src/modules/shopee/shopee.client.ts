@@ -138,4 +138,57 @@ export class ShopeeAffiliateClient {
 
     return response.data?.data?.generateShortLink?.shortLink || '';
   }
+
+  async getConversionReport(startTime: number, endTime: number, limit = 20): Promise<any[]> {
+    const query = `
+      query getConversionReport($purchaseTimeStart: Int64, $purchaseTimeEnd: Int64, $limit: Int) {
+        conversionReport(
+          purchaseTimeStart: $purchaseTimeStart,
+          purchaseTimeEnd: $purchaseTimeEnd,
+          limit: $limit
+        ) {
+          nodes {
+            conversionId
+            purchaseTime
+            totalCommission
+            conversionStatus
+            orders {
+              items {
+                itemId
+                itemName
+                itemPrice
+                itemCommission
+                actualAmount
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const payload = JSON.stringify({
+      query,
+      variables: {
+        purchaseTimeStart: String(startTime),
+        purchaseTimeEnd: String(endTime),
+        limit,
+      },
+    });
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const authHeader = this.generateAuthHeader(payload, timestamp);
+
+    const response = await axios.post(env.SHOPEE_GRAPHQL_ENDPOINT, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+      },
+    });
+
+    if (response.data.errors) {
+      throw new Error(`Shopee GraphQL Error: ${JSON.stringify(response.data.errors)}`);
+    }
+
+    return response.data?.data?.conversionReport?.nodes || [];
+  }
 }

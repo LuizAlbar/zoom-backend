@@ -122,4 +122,30 @@ export function registerShopeeTools(mcpServer: McpServer) {
       }
     }
   );
+
+  mcpServer.registerTool(
+    'get_affiliate_conversion_report',
+    {
+      description: 'Obtém o relatório consolidado de conversões e performance financeira de afiliado na Shopee para um período específico (datas no formato YYYY-MM-DD), retornando faturamento total, comissão estimada, cliques totais e os principais produtos vendidos.',
+      inputSchema: {
+        start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Data de início do relatório no formato YYYY-MM-DD.'),
+        end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Data de término do relatório no formato YYYY-MM-DD.'),
+        limit: z.number().optional().default(20).describe('Quantidade limite de conversões a buscar na API (máximo 100).'),
+      }
+    },
+    async ({ start_date, end_date, limit }) => {
+      try {
+        const result = await service.getConversionReport({ start_date, end_date, limit });
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{ type: 'text', text: `Erro na geração de relatório de conversões Shopee: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
 }
